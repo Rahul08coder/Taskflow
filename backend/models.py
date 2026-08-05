@@ -28,11 +28,13 @@ class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = (
         CheckConstraint("priority IN ('low', 'medium', 'high')", name="check_priority"),
+        CheckConstraint("status IN ('pending', 'in_progress', 'completed')", name="check_status"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     priority = Column(String, nullable=False, default="medium")
+    status = Column(String, nullable=False, default="pending")
     due_date = Column(String, nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
 
