@@ -1,0 +1,21 @@
+Benchmark Results (synthetic in-memory task data, seed=42)
+============================================================
+
+Size: 10
+  insertion_sort comparisons (sort by priority): 28
+  insertion_sort comparisons (sort by title, for search index): 31
+  binary_search comparisons: 3
+  linear_search comparisons: 6
+
+Size: 500
+  insertion_sort comparisons (sort by priority): 42245
+  insertion_sort comparisons (sort by title, for search index): 59971
+  binary_search comparisons: 9
+  linear_search comparisons: 251
+
+Size: 3000
+  insertion_sort comparisons (sort by priority): 1521369
+  insertion_sort comparisons (sort by title, for search index): 2267956
+  binary_search comparisons: 11
+  linear_search comparisons: 1501
+

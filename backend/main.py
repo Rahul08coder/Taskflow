@@ -3,6 +3,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import Task
 
+from algorithms import insertion_sort, binary_search, linear_search
+from typing import Optional
+PRIORITY_RANK = {"low": 1, "medium": 2, "high": 3}
+
 import time
 import logging
 
@@ -96,9 +100,58 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/tasks", response_model=list[TaskOut])
-def get_tasks(db: Session = Depends(get_db)):
+def get_tasks(sort: Optional[str] = None, db: Session = Depends(get_db)):
     tasks = db.query(models.Task).all()
-    return tasks
+
+    if sort is None:
+        return tasks
+
+    task_dicts = [
+        {
+            "id": t.id,
+            "title": t.title,
+            "priority": t.priority,
+            "status": t.status,
+            "due_date": t.due_date,
+            "project_id": t.project_id,
+        }
+        for t in tasks
+    ]
+
+    if sort == "priority":
+        for t in task_dicts:
+            t["_sort_key"] = PRIORITY_RANK.get(t["priority"], 0)
+        insertion_sort(task_dicts, "_sort_key")
+    elif sort == "due_date":
+        for t in task_dicts:
+            t["_sort_key"] = t["due_date"] or ""
+        insertion_sort(task_dicts, "_sort_key")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid sort parameter")
+
+    return task_dicts
+
+
+@app.get("/tasks/search")
+def search_tasks(title: str, algo: str = "binary", db: Session = Depends(get_db)):
+    tasks = db.query(models.Task).all()
+
+    index = [{"id": t.id, "title": t.title} for t in tasks]
+
+    if algo == "binary":
+        insertion_sort(index, "title")
+        idx = binary_search(index, title, "title")
+    elif algo == "linear":
+        idx = linear_search(index, title, "title")
+    else:
+        raise HTTPException(status_code=400, detail="Invalid algo parameter")
+
+    if idx == -1:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    matched_id = index[idx]["id"]
+    task = db.query(models.Task).filter(models.Task.id == matched_id).first()
+    return task
 
 
 @app.get("/tasks/{task_id}", response_model=TaskOut)
@@ -107,6 +160,9 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
+
+
+
 
 
 @app.put("/tasks/{task_id}", response_model=TaskOut)
