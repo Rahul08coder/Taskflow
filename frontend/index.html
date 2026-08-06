@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taskflow</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header class="app-header">
+    <h1>⚡ Task<span>Flow</span></h1>
+
+    <div class="user">
+        Rahul Kumar
+    </div>
+</header>
+
+    <main class="app-container">
+
+        <form id="task-form" class="task-form">
+            <div class="form-group">
+                <label for="title">Task Title</label>
+                <input type="text" id="title" name="title" placeholder="Enter task title">
+                <span id="title-error" class="error-message"></span>
+            </div>
+
+            <div class="form-group">
+                <label for="priority">Priority</label>
+                <select id="priority" name="priority">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="due_date">Due Date</label>
+                <input type="text" id="due_date" name="due_date" placeholder="e.g. 2026-08-10 or 'next friday'">
+            </div>
+
+            <button type="submit" class="btn-submit">Add Task</button>
+        </form>
+
+        <section id="task-list" class="task-list">
+            <!-- Task items will be rendered here by JavaScript -->
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
