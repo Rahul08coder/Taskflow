@@ -79,3 +79,9 @@ With both processes running, open the frontend URL in your browser. It should:
 ## Git Workflow
 
 Developed on a feature branch, committed incrementally, merged into `main`.
+
+## Testing Verification
+
+- Full CRUD tested end-to-end via PowerShell `Invoke-RestMethod` against the live Supabase-backed API.
+- Stats endpoint (`GET /projects/{id}/stats`) verified against two test projects with different task counts and statuses — response numbers matched manual counts exactly.
+- Frontend dashboard tested for add/edit/delete, empty-title validation, localStorage cache-then-fetch on load, and layout changes at both 900px and 600px breakpoints.
