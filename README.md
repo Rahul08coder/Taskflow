@@ -7,15 +7,27 @@ A task management app — FastAPI + SQLAlchemy backend (Supabase/Postgres) with 
 ```
 Taskflow/
 ├── backend/
-│   ├── database.py
-│   ├── main.py
-│   ├── models.py
-│   └── schemas.py
+│   ├── database.py           # DB engine + session dependency
+│   ├── models.py              # SQLAlchemy models (User, Project, Task)
+│   ├── schemas.py             # Pydantic schemas (Create/Update/Out/QuickAdd)
+│   ├── main.py                 # FastAPI app — all endpoints (CRUD, stats,
+│   │                            # sort/search, quick-add)
+│   ├── algorithms.py           # insertion_sort, binary_search, linear_search
+│   │                            # + comparison-counting wrapper versions
+│   ├── quick_add_parser.py     # deterministic rule-based mock parser (Section 3)
+│   ├── benchmark.py            # Section 2 benchmark script (3 data sizes)
+│   ├── benchmark_results.txt   # raw comparison-count output from benchmark.py
+│   ├── check_algorithms.py     # Section 2 PASS/FAIL checks script
+│   ├── create_tables.py        # one-time DB table creation script
+│   ├── test_connection.py      # DB connectivity sanity check
+│   └── requirements.txt
 └── frontend/
     ├── index.html
     ├── styles.css
     └── script.js
 ```
+
+`seed.py`-equivalent functionality (generating benchmark test data) lives inside `benchmark.py` itself, which generates synthetic in-memory task data at three sizes rather than requiring a separate seeding step — see the Algorithms Engine section below for details.
 
 ## Running the App Locally (Two-Process Setup)
 
