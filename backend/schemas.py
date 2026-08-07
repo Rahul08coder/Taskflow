@@ -3,6 +3,7 @@ from typing import Optional, Literal
 
 
 
+
 class UserCreate(BaseModel):
     email: str
     name: str
@@ -58,6 +59,11 @@ class TaskCreate(BaseModel):   #Schema for Creating a New Task
         if not value.strip():
             raise ValueError("title cannot be blank")
         return value
+
+
+class QuickAddRequest(BaseModel):
+    description: str
+    project_id: int
 
 
 class TaskUpdate(BaseModel):       #Schema for Updating existing data
