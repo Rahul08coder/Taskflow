@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import Task
 
+from quick_add_parser import parse_description
+from schemas import QuickAddRequest
+
 from algorithms import insertion_sort, binary_search, linear_search
 from typing import Optional
 PRIORITY_RANK = {"low": 1, "medium": 2, "high": 3}
@@ -92,6 +95,47 @@ def create_task(task: TaskCreate, db: Session = Depends(get_db)):
         status=task.status,
         due_date=task.due_date,
         project_id=task.project_id,
+    )
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
+    return new_task
+
+
+@app.post("/tasks/quick-add", response_model=TaskOut, status_code=status.HTTP_201_CREATED)
+def quick_add_task(payload: QuickAddRequest, db: Session = Depends(get_db)):
+    project = db.query(models.Project).filter(models.Project.id == payload.project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=422,
+            detail="project_id does not reference an existing project",
+        )
+
+    # Role-based prompt structure — kept the same shape whether the mock
+    # or a real LLM answers it (Task 5 optional enhancement would use this).
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are a task-parsing assistant. Given a free-text task "
+                "description, extract a concise title (with priority and "
+                "date keywords removed), a priority of exactly low, medium, "
+                "or high, and a due-date hint phrase if one is present."
+            ),
+        },
+        {"role": "user", "content": payload.description},
+    ]
+
+    # The mock parser ignores `messages` and runs the deterministic rule-based
+    # algorithm directly — but the surrounding structure stays LLM-shaped.
+    parsed = parse_description(payload.description)
+
+    new_task = models.Task(
+        title=parsed["title"],
+        priority=parsed["priority"],
+        status="pending",
+        due_date=parsed["due_date_hint"],
+        project_id=payload.project_id,
     )
     db.add(new_task)
     db.commit()
