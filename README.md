@@ -76,12 +76,68 @@ With both processes running, open the frontend URL in your browser. It should:
 | GET | `/users` | List users |
 | POST | `/users` | Create a user |
 
+## Algorithms Engine (Section 2)
+
+Two additional endpoints are powered by hand-rolled `insertion_sort`, `binary_search`, and `linear_search` implementations in `algorithms.py` — no built-in `sorted()`/`list.sort()` is used anywhere in this path. Not-found results are represented as `-1`.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/tasks?sort=priority` | Returns tasks sorted by priority (low→high), via `insertion_sort` on real DB rows |
+| GET | `/tasks?sort=due_date` | Returns tasks sorted by due date, via `insertion_sort` |
+| GET | `/tasks/search?title=<exact title>&algo=binary\|linear` | Finds a task by exact title using `binary_search` (default) or `linear_search` over an in-memory index built from real DB rows |
+
+### Time Complexity
+
+| Algorithm | Best Case | Worst Case |
+|---|---|---|
+| `insertion_sort` | O(n) — already sorted | O(n²) — reverse sorted |
+| `binary_search` | O(1) — target at the middle | O(log n) |
+| `linear_search` | O(1) — target at the start | O(n) |
+
+### Benchmark Results
+
+Measured with `benchmark.py` using synthetic in-memory task dicts (same fields the real endpoints use: `title`, `priority`, `due_date`), reproducible with `random.seed(42)`. Raw numbers also saved in `benchmark_results.txt`.
+
+| Size | insertion_sort (by priority) | insertion_sort (by title) | binary_search | linear_search |
+|---|---|---|---|---|
+| 10 | 28 | 31 | 3 | 6 |
+| 500 | 42,245 | 59,971 | 9 | 251 |
+| 3,000 | 1,521,369 | 2,267,956 | 11 | 1,501 |
+
+Run it yourself:
+```bash
+python benchmark.py
+```
+
+### Is Sorting-First Worth It?
+
+The comparison counts show two very different growth curves. Insertion sort's cost grows roughly quadratically — going from 10 to 3,000 tasks (a 300x increase in size) pushed comparisons up by more than 50,000x (28 → 1.5M+ for a priority sort). Binary search, by contrast, barely moves: the same 300x size increase only took comparisons from 3 to 11, confirming its logarithmic behavior. Linear search sits in between, scaling roughly linearly with size (6 → 1,501, tracking size almost 1:1).
+
+Given how TaskFlow is actually used — a team viewing and re-sorting their task list many times a day, but adding or renaming tasks comparatively rarely — paying the O(n²) sort cost on every single `GET /tasks?sort=priority` call is not efficient at scale. At 3,000 tasks, resorting from scratch on every page load costs over a million comparisons each time, even though the underlying data barely changed between requests. It would be more efficient to sort once and cache the result (or maintain sorted order incrementally on insert), only re-sorting when a task's priority actually changes. Search, however, tells the opposite story: binary search's near-flat cost curve makes the one-time O(n log n) cost of keeping an index sorted for search purposes cheap and clearly worth it compared to linear search's O(n) blowup, especially as the task list grows.
+
+## AI Quick-Add (Section 3)
+
+`POST /tasks/quick-add` accepts `{"description": "<free text>", "project_id": <int>}` and creates a real task row from it. Field extraction is done by a **required, keyless, deterministic rule-based mock parser** (`quick_add_parser.py`) — zero network calls, zero API keys, and it's what the endpoint uses by default. The endpoint still builds a role-based `system`/`user` message pair before parsing, so the code stays structured the same way whether the mock or a real LLM answers it.
+
+### Prompting Technique
+
+The system message is modeled on **zero-shot prompting**: it states the extraction task and the exact output fields directly ("extract a title, a priority of exactly low/medium/high, and a due-date hint"), without embedding worked examples in the message itself. This fits a keyless, deterministic mock, since the actual parsing logic is rule-based rather than inferred by a model reading examples — there's no in-context learning happening, so few-shot examples in the prompt would add token cost without changing the mock's behavior at all. Chain-of-thought was also not used: the extraction is a fixed lookup-and-strip procedure (checked keyword groups, in a fixed order), not a multi-step reasoning task that benefits from an explicit "think step by step" trace, and asking for visible reasoning would only inflate token usage for no accuracy gain here.
+
+If this endpoint's optional real-LLM path were ever enabled (`USE_REAL_LLM=true`), the same zero-shot system message would still be the right starting point for a real model, since the extraction rules are simple, closed-vocabulary, and unambiguous enough that a model shouldn't need worked examples to follow them reliably — few-shot would mainly become useful if the real model started missing edge cases (like the group-priority-wins rule, or multi-occurrence keyword stripping) that examples could disambiguate. For now, with the mock as the graded path, zero-shot keeps the prompt short and keeps response reliability entirely in the hands of the deterministic code rather than a model's interpretation.
+
+### Example Descriptions and Parsed Output
+
+Computed by running the Task 3 algorithm exactly as specified — verifiable by calling `POST /tasks/quick-add` with the same `description` values.
+
+| # | Input Description | Parsed Output |
+|---|---|---|
+| 1 | `Call the client whenever you get a chance` | `{"title": "Call the client you get a chance", "priority": "low", "due_date_hint": null}` |
+| 2 | `Prepare slides for the demo, ASAP` | `{"title": "Prepare slides for the demo,", "priority": "high", "due_date_hint": null}` |
+| 3 | `Submit the report by next Wednesday` | `{"title": "Submit the report by", "priority": "medium", "due_date_hint": "next wednesday"}` |
+| 4 | `Water the plants` | `{"title": "Water the plants", "priority": "medium", "due_date_hint": null}` |
+| 5 | `Renew the domain, low priority, whenever works` | `{"title": "Renew the domain, , works", "priority": "low", "due_date_hint": null}` |
+| 6 | `Fix the login bug today, it is urgent` | `{"title": "Fix the login bug , it is", "priority": "high", "due_date_hint": "today"}` |
+
 ## Git Workflow
 
 Developed on a feature branch, committed incrementally, merged into `main`.
-
-## Testing Verification
-
-- Full CRUD tested end-to-end via PowerShell `Invoke-RestMethod` against the live Supabase-backed API.
-- Stats endpoint (`GET /projects/{id}/stats`) verified against two test projects with different task counts and statuses — response numbers matched manual counts exactly.
-- Frontend dashboard tested for add/edit/delete, empty-title validation, localStorage cache-then-fetch on load, and layout changes at both 900px and 600px breakpoints.
