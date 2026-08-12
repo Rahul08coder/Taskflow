@@ -3,51 +3,326 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taskflow</title>
+    <title>TaskFlow — Ops Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.44.0/tabler-icons.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <header class="app-header">
-    <h1>⚡ Task<span>Flow</span></h1>
+    <div class="app-shell">
 
-    <div class="user">
-        Rahul Kumar
+        <!-- SIDEBAR -->
+        <aside class="nav-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-lockup">
+                    <span class="brand-mark">TF</span>
+                    <div>
+                        <div class="brand-name">TaskFlo<span>w</span></div>
+                        <div class="brand-sub">Internal ops hub</div>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a class="nav-item active" data-view="dashboard"><i class="ti ti-layout-dashboard nav-icon" aria-hidden="true"></i> Dashboard</a>
+                <a class="nav-item" data-view="projects"><i class="ti ti-folder nav-icon" aria-hidden="true"></i> Projects</a>
+                <a class="nav-item" data-view="tasks"><i class="ti ti-checklist nav-icon" aria-hidden="true"></i> Tasks</a>
+                <a class="nav-item" data-view="quickadd"><i class="ti ti-sparkles nav-icon" aria-hidden="true"></i> Quick Add</a>
+                <a class="nav-item" data-view="search"><i class="ti ti-search nav-icon" aria-hidden="true"></i> Search</a>
+                <a class="nav-item" data-view="stats"><i class="ti ti-chart-bar nav-icon" aria-hidden="true"></i> Stats</a>
+                <a class="nav-item" data-view="team" id="nav-admin" hidden><i class="ti ti-shield-check nav-icon" aria-hidden="true"></i> Admin</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                Live backend <span class="dot">•</span> 8000<br>
+                CORS + cache ready
+            </div>
+        </aside>
+
+        <!-- MAIN -->
+        <div class="main-area">
+
+            <header class="topbar">
+                <div class="topbar-heading">
+                    <h1 id="view-title">Dashboard</h1>
+                    <p id="view-subtitle">Command center for projects, tasks, and activity</p>
+                </div>
+                <div class="topbar-right">
+                    <input type="text" id="topbar-search" class="topbar-search" placeholder="Search tasks…">
+                    <button id="topbar-new-btn" class="btn-new" type="button">+ New</button>
+
+                    <div class="notif-wrap">
+                        <button id="notif-bell-btn" class="icon-btn notif-bell" type="button" aria-haspopup="true" aria-expanded="false">
+                            <i class="ti ti-bell" aria-hidden="true"></i>
+                            <span id="notif-count-badge" class="notif-count" hidden>0</span>
+                        </button>
+                        <div id="notif-dropdown" class="notif-dropdown" hidden>
+                            <div class="notif-dropdown-header">
+                                <span>Notifications</span>
+                                <button id="notif-mark-all-btn" class="notif-mark-all" type="button">Mark all read</button>
+                            </div>
+                            <div id="notif-list" class="notif-list">
+                                <p class="hint-text small">Loading…</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <span id="topbar-user-name" class="topbar-user"></span>
+                    <button id="logout-btn" class="btn-outline btn-sm" type="button">Log out</button>
+                </div>
+            </header>
+
+            <main class="view-area">
+
+                <!-- ============ DASHBOARD ============ -->
+                <section class="view-panel active" data-view="dashboard">
+                    <div class="kpi-grid">
+                        <div class="kpi-tile accent-teal">
+                            <div class="kpi-label">Total Tasks</div>
+                            <div class="kpi-value" id="kpi-total-tasks">—</div>
+                        </div>
+                        <div class="kpi-tile accent-blue">
+                            <div class="kpi-label">Projects</div>
+                            <div class="kpi-value" id="kpi-projects">—</div>
+                        </div>
+                        <div class="kpi-tile accent-amber">
+                            <div class="kpi-label">Pending</div>
+                            <div class="kpi-value" id="kpi-pending">—</div>
+                        </div>
+                        <div class="kpi-tile accent-green">
+                            <div class="kpi-label">Done Rate</div>
+                            <div class="kpi-value" id="kpi-done-rate">—</div>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <section class="panel-card">
+                            <h2>Projects in motion</h2>
+                            <div id="dashboard-projects" class="motion-list">
+                                <p class="hint-text">Loading projects…</p>
+                            </div>
+                        </section>
+                        <section class="panel-card">
+                            <h2>Recent tasks</h2>
+                            <div id="dashboard-recent" class="recent-list">
+                                <p class="hint-text">Loading tasks…</p>
+                            </div>
+                        </section>
+                    </div>
+                </section>
+
+                <!-- ============ PROJECTS ============ -->
+                <section class="view-panel" data-view="projects">
+                    <section class="panel-card">
+                        <h2>Create project</h2>
+                        <form id="create-project-form" class="add-task-row" style="grid-template-columns: 2fr auto;">
+                            <input type="text" id="new-project-name" class="control" placeholder="Project name">
+                            <button type="submit" class="btn-new">Create</button>
+                        </form>
+                        <span id="project-error" class="error-message"></span>
+                    </section>
+
+                    <section class="panel-card">
+                        <h2>Project grid <span class="hint-inline">— click a project to see its tasks</span></h2>
+                        <div id="projects-grid" class="projects-grid">
+                            <p class="hint-text">Loading projects…</p>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- ============ TASKS ============ -->
+                <section class="view-panel" data-view="tasks">
+                    <section class="panel-card">
+                        <h2>Add task</h2>
+                        <form id="add-task-form" class="add-task-row" novalidate>
+                            <select id="task-project" class="control" required></select>
+                            <input type="text" id="task-title" class="control" placeholder="Task title">
+                            <select id="task-priority" class="control">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                            <input type="date" id="task-due-date" class="control">
+                            <input type="time" id="task-due-time" class="control">
+                            <button type="submit" class="btn-new">Add</button>
+                        </form>
+                        <span id="title-error" class="error-message"></span>
+                    </section>
+
+                    <section class="panel-card">
+                        <div class="panel-card-header">
+                            <h2>Task list <span id="task-count-badge" class="count-badge">0</span></h2>
+                            <div class="task-list-controls">
+                                <select id="project-filter-select" class="control control-sm">
+                                    <option value="all">All projects</option>
+                                </select>
+                                <span id="cache-indicator" class="cache-status" hidden>cached</span>
+                            </div>
+                        </div>
+                        <div id="task-list-container" class="task-list" aria-live="polite"></div>
+                    </section>
+                </section>
+
+                <!-- ============ QUICK ADD ============ -->
+                <section class="view-panel" data-view="quickadd">
+                    <div class="grid-2">
+                        <section class="panel-card">
+                            <h2>Write a task in plain English</h2>
+                            <form id="quick-add-form">
+                                <select id="quick-add-project" class="control" required></select>
+                                <textarea id="quick-add-desc" class="control textarea" rows="4" placeholder="e.g. Finish the report next Friday, it's urgent" required></textarea>
+                                <div class="button-row">
+                                    <button type="submit" class="btn-new">Quick Add</button>
+                                    <button type="reset" class="btn-outline" id="quick-add-reset-btn">Reset</button>
+                                </div>
+                                <span id="quick-add-error" class="error-message"></span>
+                            </form>
+                            <p class="hint-text small">System prompt + user message structure — see README for the parsing algorithm.</p>
+                        </section>
+
+                        <section class="panel-card">
+                            <h2>Parsed output preview</h2>
+                            <div class="preview-field">
+                                <span class="preview-label">Title</span>
+                                <span class="preview-value" id="preview-title">—</span>
+                            </div>
+                            <div class="preview-field">
+                                <span class="preview-label">Priority</span>
+                                <span class="preview-value" id="preview-priority">—</span>
+                            </div>
+                            <div class="preview-field">
+                                <span class="preview-label">Due date hint</span>
+                                <span class="preview-value" id="preview-due">—</span>
+                            </div>
+                            <div class="preview-field">
+                                <span class="preview-label">Project</span>
+                                <span class="preview-value" id="preview-project">—</span>
+                            </div>
+                            <p class="hint-text small">If validation fails, the API returns 422 and the database is left unchanged.</p>
+                        </section>
+                    </div>
+                </section>
+
+                <!-- ============ SEARCH + SORT ============ -->
+                <section class="view-panel" data-view="search">
+                    <div class="grid-2">
+                        <section class="panel-card">
+                            <h2>Search controls</h2>
+                            <input type="text" id="search-title-input" class="control" placeholder="Exact task title search">
+                            <div class="algo-toggle">
+                                <button type="button" class="algo-btn active" data-algo="binary">Binary</button>
+                                <button type="button" class="algo-btn" data-algo="linear">Linear</button>
+                            </div>
+                            <div class="button-row">
+                                <button id="search-btn" class="btn-new" type="button">Search</button>
+                                <button id="clear-search-btn" class="btn-outline" type="button">Clear</button>
+                            </div>
+
+                            <hr class="divider">
+
+                            <select id="sort-select" class="control">
+                                <option value="none">No sort</option>
+                                <option value="priority">Sort by priority</option>
+                                <option value="due_date">Sort by due date</option>
+                            </select>
+                            <button id="apply-sort-btn" class="btn-blue" type="button">Apply</button>
+
+                            <p class="hint-text small">Sorting is powered by insertion sort; search by binary or linear search — both hand-rolled, no built-ins.</p>
+                        </section>
+
+                        <section class="panel-card">
+                            <h2>Algorithm decision strip</h2>
+                            <div class="algo-strip">
+                                <div class="algo-card">
+                                    <div class="algo-name">insertion_sort</div>
+                                    <div class="algo-desc">sort list in place</div>
+                                    <span class="method-pill teal">GET</span>
+                                </div>
+                                <div class="algo-card">
+                                    <div class="algo-name">binary_search</div>
+                                    <div class="algo-desc">fast on sorted titles</div>
+                                    <span class="method-pill blue">GET</span>
+                                </div>
+                                <div class="algo-card">
+                                    <div class="algo-name">linear_search</div>
+                                    <div class="algo-desc">simple baseline</div>
+                                    <span class="method-pill amber">GET</span>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <section class="panel-card">
+                        <h2>Results panel</h2>
+                        <div id="search-notification" class="notification-banner" hidden></div>
+                        <div id="search-results" class="task-list"></div>
+                    </section>
+                </section>
+
+                <!-- ============ STATS ============ -->
+                <section class="view-panel" data-view="stats">
+                    <section class="panel-card">
+                        <div class="panel-card-header">
+                            <h2>Project stats endpoint</h2>
+                            <div class="task-list-controls">
+                                <select id="stats-project-select" class="control control-sm"></select>
+                                <button id="refresh-stats-btn" class="btn-outline btn-sm" type="button">Refresh</button>
+                            </div>
+                        </div>
+                        <div id="stats-container" class="kpi-grid">
+                            <p class="hint-text">Loading project metrics…</p>
+                        </div>
+                    </section>
+                </section>
+
+                <!-- ============ ADMIN ============ -->
+                <section class="view-panel" data-view="team">
+                    <section class="panel-card">
+                        <h2>Registered users <span class="hint-inline">— click a user to see their projects &amp; tasks</span></h2>
+                        <div id="team-list" class="team-grid">
+                            <p class="hint-text">Loading users…</p>
+                        </div>
+                    </section>
+
+                    <section class="panel-card" id="admin-detail-card" hidden>
+                        <div class="panel-card-header">
+                            <h2 id="admin-detail-title">User detail</h2>
+                            <button id="admin-detail-close" class="btn-outline btn-sm" type="button">Close</button>
+                        </div>
+                        <h3 class="hint-inline" style="display:block; margin-bottom:8px;">Projects</h3>
+                        <div id="admin-detail-projects" class="projects-grid" style="margin-bottom:18px;"></div>
+                        <h3 class="hint-inline" style="display:block; margin-bottom:8px;">Tasks</h3>
+                        <div id="admin-detail-tasks" class="task-list"></div>
+                    </section>
+                </section>
+
+            </main>
+        </div>
     </div>
-</header>
 
-    <main class="app-container">
+    <!-- ============ CHAT WIDGET ============ -->
+    <button id="chat-fab" class="chat-fab" type="button" aria-label="Open help chat">
+        <i class="ti ti-message-chatbot" aria-hidden="true"></i>
+    </button>
 
-        <form id="task-form" class="task-form">
-            <div class="form-group">
-                <label for="title">Task Title</label>
-                <input type="text" id="title" name="title" placeholder="Enter task title">
-                <span id="title-error" class="error-message"></span>
+    <div id="chat-panel" class="chat-panel" hidden>
+        <div class="chat-panel-header">
+            <span><i class="ti ti-message-chatbot" aria-hidden="true"></i> TaskFlow Help</span>
+            <button id="chat-close-btn" class="chat-close" type="button" aria-label="Close chat">×</button>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+            <div class="chat-message bot">
+                <div class="chat-bubble">Hi! Ask me anything about using TaskFlow — Tasks, Projects, Quick Add, Search, Sort, or Stats.</div>
             </div>
-
-            <div class="form-group">
-                <label for="priority">Priority</label>
-                <select id="priority" name="priority">
-                    <option value="low">Low</option>
-                    <option value="medium" selected>Medium</option>
-                    <option value="high">High</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label for="due_date">Due Date</label>
-                <input type="text" id="due_date" name="due_date" placeholder="e.g. 2026-08-10 or 'next friday'">
-            </div>
-
-            <button type="submit" class="btn-submit">Add Task</button>
+        </div>
+        <form id="chat-form" class="chat-input-row">
+            <input type="text" id="chat-input" class="control" placeholder="Ask a question…" autocomplete="off">
+            <button type="submit" class="btn-new" id="chat-send-btn">Send</button>
         </form>
+    </div>
 
-        <section id="task-list" class="task-list">
-            <!-- Task items will be rendered here by JavaScript -->
-        </section>
-
-    </main>
-
-    <script src="script.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

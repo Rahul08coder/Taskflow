@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log in — TaskFlow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="auth-page">
+        <div class="auth-card">
+            <div class="auth-brand">
+                <span class="brand-mark">TF</span>
+                <span class="brand-name">TaskFlo<span>w</span></span>
+            </div>
+
+            <div class="auth-title">Welcome back</div>
+            <div class="auth-subtitle">Log in to see your dashboard.</div>
+
+            <div id="login-success" class="auth-success" hidden>Account created — log in below.</div>
+            <div id="login-error" class="auth-error" hidden></div>
+
+            <form id="login-form">
+                <div class="auth-field">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" class="control" placeholder="you@example.com" required>
+                </div>
+                <div class="auth-field">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" class="control" placeholder="Your password" required>
+                </div>
+                <button type="submit" class="btn-new auth-submit">Log in</button>
+            </form>
+
+            <div class="auth-footer">
+                Don't have an account? <a href="register.html">Register</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:8000";
+
+        const loginForm = document.getElementById("login-form");
+        const loginError = document.getElementById("login-error");
+        const loginSuccess = document.getElementById("login-success");
+
+        // If we arrived here right after registering, show a friendly hint.
+        if (new URLSearchParams(window.location.search).get("registered") === "1") {
+            loginSuccess.hidden = false;
+        }
+
+        // If a session already exists, skip straight to the dashboard.
+        if (localStorage.getItem("taskflow_token")) {
+            window.location.href = "index.html";
+        }
+
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            loginError.hidden = true;
+
+            const email = document.getElementById("login-email").value.trim();
+            const password = document.getElementById("login-password").value;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    loginError.textContent = typeof err.detail === "string" ? err.detail : "Login failed.";
+                    loginError.hidden = false;
+                    return;
+                }
+
+                const data = await res.json();
+                localStorage.setItem("taskflow_token", data.token);
+                localStorage.setItem("taskflow_user", JSON.stringify({
+                    id: data.user_id,
+                    name: data.name,
+                    email: data.email,
+                    is_admin: data.is_admin,
+                }));
+
+                window.location.href = "index.html";
+            } catch (e) {
+                console.error("Login failed:", e);
+                loginError.textContent = "Network error — check the backend is running.";
+                loginError.hidden = false;
+            }
+        });
+    </script>
+</body>
+</html>
