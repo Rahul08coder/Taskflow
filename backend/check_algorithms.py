@@ -1,3 +1,7 @@
+# =====================================================
+# Algorithm Test Suite - Validation Script
+# =====================================================
+
 """
 Automated checks for the algorithms in algorithms.py.
 Plain if/else PASS/FAIL output — no assert, pytest, or unittest.
@@ -14,14 +18,14 @@ from algorithms import (
     linear_search_count,
 )
 
-
+# Helper function to compare result with expected value
 def check(case_name, result, expected):
     if result == expected:
         print(f"PASS: {case_name}")
     else:
         print(f"FAIL: {case_name} — expected {expected}, got {result}")
 
-
+# Main test execution function
 def run_checks():
     # --- Case 1: insertion_sort on an empty list ---
     empty = []
@@ -81,6 +85,6 @@ def run_checks():
     else:
         print(f"FAIL: linear_search_count absent value — expected {expected_lsc}, got {lsc_result}")
 
-
+# Entry point - runs when script is executed directly
 if __name__ == "__main__":
     run_checks()
