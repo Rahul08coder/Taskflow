@@ -13,6 +13,18 @@ const API_BASE = "http://127.0.0.1:8000";
 
 // Local storage key for caching tasks data to improve performance
 const CACHE_KEY = "taskflow_tasks_v3";
+const THEME_KEY = "taskflow_theme";
+
+function applyTheme(theme) {
+    const isLight = theme === "light";
+    document.documentElement.dataset.theme = isLight ? "light" : "dark";
+    localStorage.setItem(THEME_KEY, isLight ? "light" : "dark");
+    const icon = themeToggle.querySelector("i");
+    const label = themeToggle.querySelector("span");
+    icon.className = `ti ${isLight ? "ti-moon" : "ti-sun"}`;
+    label.textContent = isLight ? "Dark mode" : "Light mode";
+    themeToggle.setAttribute("aria-label", `Switch to ${isLight ? "dark" : "light"} mode`);
+}
 
 // ---- Auth gate (runs before anything else) ----
 // Check if user is authenticated by looking for token in localStorage
@@ -46,20 +58,35 @@ function handleAuthFailure(res) {
 let allTasks = [];  // Stores all tasks fetched from backend
 let projects = [];  // Stores all projects fetched from backend
 let searchAlgo = "binary";  // Default search algorithm for task search
+const TASKS_PER_PAGE = 5;
+let currentTaskPage = 1;
 
 // ---- Shared element refs ----
 // Get DOM element references for navigation and main UI components
 const viewTitle = document.getElementById("view-title");
 const viewSubtitle = document.getElementById("view-subtitle");
+const topbar = document.querySelector(".topbar");
 const navItems = document.querySelectorAll(".nav-item[data-view]");
 const viewPanels = document.querySelectorAll(".view-panel[data-view]");
 const navAdmin = document.getElementById("nav-admin");
+const appShell = document.querySelector(".app-shell");
+const mobileMenuToggle = document.getElementById("mobile-menu-toggle");
+const mobileControls = document.getElementById("mobile-controls");
+const themeToggle = document.getElementById("theme-toggle");
 
 // Top bar elements
-const topbarSearch = document.getElementById("topbar-search");
-const topbarNewBtn = document.getElementById("topbar-new-btn");
-const topbarUserName = document.getElementById("topbar-user-name");
-const logoutBtn = document.getElementById("logout-btn");
+const sidebarLogoutBtn = document.getElementById("sidebar-logout-btn");
+const sidebarUserName = document.getElementById("sidebar-user-name");
+const sidebarUserEmail = document.getElementById("sidebar-user-email");
+const sidebarUserAvatar = document.getElementById("sidebar-user-avatar");
+const topbarRight = document.querySelector(".topbar-right");
+const topbarRightHome = document.createComment("topbar controls home");
+topbarRight.after(topbarRightHome);
+
+applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+themeToggle.addEventListener("click", () => {
+    applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+});
 
 // Chat widget elements
 const chatFab = document.getElementById("chat-fab");
@@ -89,6 +116,20 @@ const taskListContainer = document.getElementById("task-list-container");
 const taskCountBadge = document.getElementById("task-count-badge");
 const cacheIndicator = document.getElementById("cache-indicator");
 const projectFilterSelect = document.getElementById("project-filter-select");
+const taskPagination = document.getElementById("task-pagination");
+
+// Edit task modal elements
+const editTaskModal = document.getElementById("edit-task-modal");
+const editTaskForm = document.getElementById("edit-task-form");
+const editTaskTitle = document.getElementById("edit-task-title");
+const editTaskPriority = document.getElementById("edit-task-priority");
+const editTaskStatus = document.getElementById("edit-task-status");
+const editTaskDueDate = document.getElementById("edit-task-due-date");
+const editTaskError = document.getElementById("edit-task-error");
+const editTaskCloseBtn = document.getElementById("edit-task-close-btn");
+const editTaskCancelBtn = document.getElementById("edit-task-cancel-btn");
+const markCompleteBtn = document.getElementById("mark-complete-btn");
+let editingTaskId = null;
 
 // Quick Add view elements
 const quickAddForm = document.getElementById("quick-add-form");
@@ -163,6 +204,7 @@ function setActiveView(view) {
     const [title, subtitle] = VIEW_META[view] || ["", ""];
     viewTitle.textContent = title;
     viewSubtitle.textContent = subtitle;
+    topbar.classList.toggle("dashboard-view", view === "dashboard");
 
     // Render specific view content when switching
     if (view === "dashboard") renderDashboard();
@@ -172,31 +214,46 @@ function setActiveView(view) {
 
 // Add click event listeners to navigation items for view switching
 navItems.forEach((item) => {
-    item.addEventListener("click", () => setActiveView(item.dataset.view));
+    item.addEventListener("click", () => {
+        setActiveView(item.dataset.view);
+        closeMobileMenu();
+    });
 });
 
-// "New Task" button in top bar switches to tasks view and focuses title input
-topbarNewBtn.addEventListener("click", () => {
-    setActiveView("tasks");
-    taskTitleInput.focus();
-});
+function closeMobileMenu() {
+    appShell.classList.remove("mobile-menu-open");
+    mobileMenuToggle.setAttribute("aria-expanded", "false");
+    mobileMenuToggle.setAttribute("aria-label", "Open menu");
+}
 
-// Search functionality in top bar - pressing Enter switches to search view
-topbarSearch.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter") return;
-    const value = topbarSearch.value.trim();
-    if (!value) return;
-    setActiveView("search");
-    searchTitleInput.value = value;
-    runSearch();
+function toggleMobileMenu() {
+    const isOpen = appShell.classList.contains("mobile-menu-open");
+    if (isOpen) {
+        closeMobileMenu();
+        return;
+    }
+    if (window.innerWidth <= 640 && topbarRight.parentElement !== mobileControls) {
+        mobileControls.appendChild(topbarRight);
+    }
+    appShell.classList.add("mobile-menu-open");
+    mobileMenuToggle.setAttribute("aria-expanded", "true");
+    mobileMenuToggle.setAttribute("aria-label", "Close menu");
+}
+
+mobileMenuToggle.addEventListener("click", toggleMobileMenu);
+window.addEventListener("resize", () => {
+    if (window.innerWidth > 640 && topbarRight.parentElement === mobileControls) {
+        topbarRightHome.before(topbarRight);
+        closeMobileMenu();
+    }
 });
 
 // =====================================================
 // Logout functionality
 // =====================================================
 
-// Logout button handler - clears session and redirects to login
-logoutBtn.addEventListener("click", async () => {
+// Logout buttons clear the session and redirect to login.
+async function logout() {
     try {
         await fetch(`${API_BASE}/auth/logout`, {
             method: "POST",
@@ -208,7 +265,9 @@ logoutBtn.addEventListener("click", async () => {
     localStorage.removeItem("taskflow_token");
     localStorage.removeItem("taskflow_user");
     window.location.href = "login.html";
-});
+}
+
+sidebarLogoutBtn.addEventListener("click", logout);
 
 // =====================================================
 // Projects management (loaded once, reused across views)
@@ -295,6 +354,16 @@ function createTaskElement(task) {
     const item = document.createElement("div");
     item.className = "task-item";
     item.dataset.id = task.id;
+    item.tabIndex = 0;
+    item.setAttribute("role", "button");
+    item.setAttribute("aria-label", `Edit task: ${task.title}`);
+    item.addEventListener("click", () => handleEdit(task.id));
+    item.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            handleEdit(task.id);
+        }
+    });
 
     const info = document.createElement("div");
     info.className = "task-info";
@@ -330,14 +399,20 @@ function createTaskElement(task) {
     editBtn.className = "icon-btn edit";
     editBtn.textContent = "✎";
     editBtn.title = "Edit";
-    editBtn.addEventListener("click", () => handleEdit(task.id));
+    editBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        handleEdit(task.id);
+    });
 
     // Delete button
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "icon-btn delete";
     deleteBtn.textContent = "×";
     deleteBtn.title = "Delete";
-    deleteBtn.addEventListener("click", () => handleDelete(task.id));
+    deleteBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        handleDelete(task.id);
+    });
 
     actions.appendChild(editBtn);
     actions.appendChild(deleteBtn);
@@ -359,6 +434,36 @@ function renderTaskList(container, tasks) {
     tasks.forEach((t) => container.appendChild(createTaskElement(t)));
 }
 
+function renderTaskPagination(totalTasks) {
+    const totalPages = Math.ceil(totalTasks / TASKS_PER_PAGE);
+    taskPagination.textContent = "";
+    taskPagination.hidden = totalPages <= 1;
+    if (totalPages <= 1) return;
+
+    const addPageButton = (label, page, disabled, active) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "pagination-btn";
+        button.textContent = label;
+        button.disabled = disabled;
+        if (active) {
+            button.classList.add("active");
+            button.setAttribute("aria-current", "page");
+        }
+        button.addEventListener("click", () => {
+            currentTaskPage = page;
+            renderFilteredTaskList();
+        });
+        taskPagination.appendChild(button);
+    };
+
+    addPageButton("Previous", currentTaskPage - 1, currentTaskPage === 1, false);
+    for (let page = 1; page <= totalPages; page += 1) {
+        addPageButton(String(page), page, false, page === currentTaskPage);
+    }
+    addPageButton("Next", currentTaskPage + 1, currentTaskPage === totalPages, false);
+}
+
 // Render filtered task list based on project filter selection
 function renderFilteredTaskList() {
     let list = allTasks;
@@ -367,11 +472,18 @@ function renderFilteredTaskList() {
         list = list.filter((t) => String(t.project_id) === pf);
     }
     taskCountBadge.textContent = list.length;
-    renderTaskList(taskListContainer, list);
+    const totalPages = Math.max(1, Math.ceil(list.length / TASKS_PER_PAGE));
+    currentTaskPage = Math.min(currentTaskPage, totalPages);
+    const start = (currentTaskPage - 1) * TASKS_PER_PAGE;
+    renderTaskList(taskListContainer, list.slice(start, start + TASKS_PER_PAGE));
+    renderTaskPagination(list.length);
 }
 
 // Event listener for project filter change
-projectFilterSelect.addEventListener("change", renderFilteredTaskList);
+projectFilterSelect.addEventListener("change", () => {
+    currentTaskPage = 1;
+    renderFilteredTaskList();
+});
 
 // =====================================================
 // Caching + fetching tasks
@@ -409,6 +521,7 @@ async function loadTasks(sort) {
         if (handleAuthFailure(res)) return;
         const data = await res.json();
         allTasks = data;
+        currentTaskPage = 1;
         saveCache(data);
         cacheIndicator.hidden = true;
         renderFilteredTaskList();
@@ -476,33 +589,76 @@ addTaskForm.addEventListener("submit", async (event) => {
 // Edit / Delete task functionality
 // =====================================================
 
-// Handle task editing - prompt user for new title
-async function handleEdit(taskId) {
+function handleEdit(taskId) {
     const task = allTasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    const newTitle = prompt("Edit task title:", task.title);
-    if (newTitle === null) return;
+    editingTaskId = taskId;
+    editTaskTitle.value = task.title;
+    editTaskPriority.value = task.priority;
+    editTaskStatus.value = task.status;
+    editTaskDueDate.value = task.due_date ? task.due_date.slice(0, 10) : "";
+    editTaskError.textContent = "";
+    editTaskModal.hidden = false;
+    document.body.classList.add("modal-open");
+    editTaskTitle.focus();
+}
 
-    const trimmed = newTitle.trim();
+function closeEditTaskModal() {
+    editTaskModal.hidden = true;
+    document.body.classList.remove("modal-open");
+    editingTaskId = null;
+}
+
+async function saveTaskChanges(statusOverride) {
+    if (!editingTaskId) return;
+    const trimmed = editTaskTitle.value.trim();
     if (!trimmed) {
-        alert("Title cannot be empty.");
+        editTaskError.textContent = "Title cannot be empty.";
         return;
     }
 
+    const payload = {
+        title: trimmed,
+        priority: editTaskPriority.value,
+        status: statusOverride || editTaskStatus.value,
+        due_date: editTaskDueDate.value || null,
+    };
+
     try {
-        const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+        const res = await fetch(`${API_BASE}/tasks/${editingTaskId}`, {
             method: "PUT",
             headers: authHeaders({ "Content-Type": "application/json" }),
-            body: JSON.stringify({ title: trimmed }),
+            body: JSON.stringify(payload),
         });
         if (handleAuthFailure(res)) return;
-        if (!res.ok) throw new Error("Update failed");
+        if (!res.ok) {
+            editTaskError.textContent = "Could not save changes. Please check the fields.";
+            return;
+        }
+        closeEditTaskModal();
         await loadTasks(sortSelect.value);
+        await refreshNotifications();
     } catch (e) {
         console.error("Edit failed:", e);
+        editTaskError.textContent = "Network error. Please try again.";
     }
 }
+
+editTaskForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveTaskChanges();
+});
+
+markCompleteBtn.addEventListener("click", () => saveTaskChanges("completed"));
+editTaskCloseBtn.addEventListener("click", closeEditTaskModal);
+editTaskCancelBtn.addEventListener("click", closeEditTaskModal);
+editTaskModal.addEventListener("click", (event) => {
+    if (event.target === editTaskModal) closeEditTaskModal();
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !editTaskModal.hidden) closeEditTaskModal();
+});
 
 // Handle task deletion
 async function handleDelete(taskId) {
@@ -1264,11 +1420,16 @@ chatForm.addEventListener("submit", async (event) => {
 async function init() {
     // Set user name in top bar and show admin nav if applicable
     if (currentUser) {
-        topbarUserName.textContent = currentUser.name;
+        const displayName = currentUser.name || "TaskFlow User";
+        sidebarUserName.textContent = displayName;
+        sidebarUserEmail.textContent = currentUser.email || "";
+        sidebarUserAvatar.textContent = displayName.slice(0, 2).toUpperCase();
         if (currentUser.is_admin) {
             navAdmin.hidden = false;
         }
     }
+
+    topbar.classList.add("dashboard-view");
 
     // Load cached tasks for immediate display
     loadCacheAndRender();
