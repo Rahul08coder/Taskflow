@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TaskFlow — Ops Hub</title>
+    <title>TaskFlow - Ops Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/3.44.0/tabler-icons.min.css">
@@ -23,6 +23,9 @@
                         <div class="brand-sub">Internal ops hub</div>
                     </div>
                 </div>
+                <button id="mobile-menu-toggle" class="mobile-menu-toggle" type="button" aria-label="Open menu" aria-expanded="false">
+                    <i class="ti ti-menu-2" aria-hidden="true"></i>
+                </button>
             </div>
 
             <nav class="sidebar-nav">
@@ -34,10 +37,21 @@
                 <a class="nav-item" data-view="stats"><i class="ti ti-chart-bar nav-icon" aria-hidden="true"></i> Stats</a>
                 <a class="nav-item" data-view="team" id="nav-admin" hidden><i class="ti ti-shield-check nav-icon" aria-hidden="true"></i> Admin</a>
             </nav>
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to light mode">
+                <i class="ti ti-sun" aria-hidden="true"></i>
+                <span>Light mode</span>
+            </button>
+            <div id="mobile-controls" class="mobile-controls"></div>
 
-            <div class="sidebar-footer">
-                Live backend <span class="dot">•</span> 8000<br>
-                CORS + cache ready
+            <div class="sidebar-user-card">
+                <div id="sidebar-user-avatar" class="sidebar-user-avatar">U</div>
+                <div class="sidebar-user-details">
+                    <div id="sidebar-user-name" class="sidebar-user-name">User</div>
+                    <div id="sidebar-user-email" class="sidebar-user-email"></div>
+                </div>
+                <button id="sidebar-logout-btn" class="sidebar-logout-btn" type="button" aria-label="Log out" title="Log out">
+                    <i class="ti ti-logout" aria-hidden="true"></i>
+                </button>
             </div>
         </aside>
 
@@ -50,8 +64,6 @@
                     <p id="view-subtitle">Command center for projects, tasks, and activity</p>
                 </div>
                 <div class="topbar-right">
-                    <input type="text" id="topbar-search" class="topbar-search" placeholder="Search tasks…">
-                    <button id="topbar-new-btn" class="btn-new" type="button">+ New</button>
 
                     <div class="notif-wrap">
                         <button id="notif-bell-btn" class="icon-btn notif-bell" type="button" aria-haspopup="true" aria-expanded="false">
@@ -64,13 +76,11 @@
                                 <button id="notif-mark-all-btn" class="notif-mark-all" type="button">Mark all read</button>
                             </div>
                             <div id="notif-list" class="notif-list">
-                                <p class="hint-text small">Loading…</p>
+                                <p class="hint-text small">Loading...</p>
                             </div>
                         </div>
                     </div>
 
-                    <span id="topbar-user-name" class="topbar-user"></span>
-                    <button id="logout-btn" class="btn-outline btn-sm" type="button">Log out</button>
                 </div>
             </header>
 
@@ -81,19 +91,19 @@
                     <div class="kpi-grid">
                         <div class="kpi-tile accent-teal">
                             <div class="kpi-label">Total Tasks</div>
-                            <div class="kpi-value" id="kpi-total-tasks">—</div>
+                            <div class="kpi-value" id="kpi-total-tasks">-</div>
                         </div>
                         <div class="kpi-tile accent-blue">
                             <div class="kpi-label">Projects</div>
-                            <div class="kpi-value" id="kpi-projects">—</div>
+                            <div class="kpi-value" id="kpi-projects">-</div>
                         </div>
                         <div class="kpi-tile accent-amber">
                             <div class="kpi-label">Pending</div>
-                            <div class="kpi-value" id="kpi-pending">—</div>
+                            <div class="kpi-value" id="kpi-pending">-</div>
                         </div>
                         <div class="kpi-tile accent-green">
                             <div class="kpi-label">Done Rate</div>
-                            <div class="kpi-value" id="kpi-done-rate">—</div>
+                            <div class="kpi-value" id="kpi-done-rate">-</div>
                         </div>
                     </div>
 
@@ -101,13 +111,13 @@
                         <section class="panel-card">
                             <h2>Projects in motion</h2>
                             <div id="dashboard-projects" class="motion-list">
-                                <p class="hint-text">Loading projects…</p>
+                                <p class="hint-text">Loading projects...</p>
                             </div>
                         </section>
                         <section class="panel-card">
                             <h2>Recent tasks</h2>
                             <div id="dashboard-recent" class="recent-list">
-                                <p class="hint-text">Loading tasks…</p>
+                                <p class="hint-text">Loading tasks...</p>
                             </div>
                         </section>
                     </div>
@@ -125,9 +135,9 @@
                     </section>
 
                     <section class="panel-card">
-                        <h2>Project grid <span class="hint-inline">— click a project to see its tasks</span></h2>
+                        <h2>Project grid <span class="hint-inline">- click a project to see its tasks</span></h2>
                         <div id="projects-grid" class="projects-grid">
-                            <p class="hint-text">Loading projects…</p>
+                            <p class="hint-text">Loading projects...</p>
                         </div>
                     </section>
                 </section>
@@ -162,6 +172,7 @@
                             </div>
                         </div>
                         <div id="task-list-container" class="task-list" aria-live="polite"></div>
+                        <nav id="task-pagination" class="pagination" aria-label="Task list pages" hidden></nav>
                     </section>
                 </section>
 
@@ -179,26 +190,26 @@
                                 </div>
                                 <span id="quick-add-error" class="error-message"></span>
                             </form>
-                            <p class="hint-text small">System prompt + user message structure — see README for the parsing algorithm.</p>
+                            <p class="hint-text small">System prompt + user message structure - see README for the parsing algorithm.</p>
                         </section>
 
                         <section class="panel-card">
                             <h2>Parsed output preview</h2>
                             <div class="preview-field">
                                 <span class="preview-label">Title</span>
-                                <span class="preview-value" id="preview-title">—</span>
+                                <span class="preview-value" id="preview-title">-</span>
                             </div>
                             <div class="preview-field">
                                 <span class="preview-label">Priority</span>
-                                <span class="preview-value" id="preview-priority">—</span>
+                                <span class="preview-value" id="preview-priority">-</span>
                             </div>
                             <div class="preview-field">
                                 <span class="preview-label">Due date hint</span>
-                                <span class="preview-value" id="preview-due">—</span>
+                                <span class="preview-value" id="preview-due">-</span>
                             </div>
                             <div class="preview-field">
                                 <span class="preview-label">Project</span>
-                                <span class="preview-value" id="preview-project">—</span>
+                                <span class="preview-value" id="preview-project">-</span>
                             </div>
                             <p class="hint-text small">If validation fails, the API returns 422 and the database is left unchanged.</p>
                         </section>
@@ -229,7 +240,7 @@
                             </select>
                             <button id="apply-sort-btn" class="btn-blue" type="button">Apply</button>
 
-                            <p class="hint-text small">Sorting is powered by insertion sort; search by binary or linear search — both hand-rolled, no built-ins.</p>
+                            <p class="hint-text small">Sorting is powered by insertion sort; search by binary or linear search - both hand-rolled, no built-ins.</p>
                         </section>
 
                         <section class="panel-card">
@@ -272,7 +283,7 @@
                             </div>
                         </div>
                         <div id="stats-container" class="kpi-grid">
-                            <p class="hint-text">Loading project metrics…</p>
+                            <p class="hint-text">Loading project metrics...</p>
                         </div>
                     </section>
                 </section>
@@ -280,9 +291,9 @@
                 <!-- ============ ADMIN ============ -->
                 <section class="view-panel" data-view="team">
                     <section class="panel-card">
-                        <h2>Registered users <span class="hint-inline">— click a user to see their projects &amp; tasks</span></h2>
+                        <h2>Registered users <span class="hint-inline">- click a user to see their projects &amp; tasks</span></h2>
                         <div id="team-list" class="team-grid">
-                            <p class="hint-text">Loading users…</p>
+                            <p class="hint-text">Loading users...</p>
                         </div>
                     </section>
 
@@ -299,7 +310,57 @@
                 </section>
 
             </main>
+
+            <footer class="app-footer">
+                <div class="footer-brand">
+                    <span class="footer-mark">TF</span>
+                    <strong>TaskFlo<span>w</span></strong>
+                    <span class="footer-copy">&bull; &copy; 2026 TaskFlow</span>
+                </div>
+                <div class="footer-credit">Designed &amp; Developed by <strong>Rahul Kumar</strong> <span aria-label="love">&#10084;</span></div>
+            </footer>
         </div>
+    </div>
+
+    <!-- ============ EDIT TASK MODAL ============ -->
+    <div id="edit-task-modal" class="modal-backdrop" hidden>
+        <section class="edit-task-modal" role="dialog" aria-modal="true" aria-labelledby="edit-task-modal-title">
+            <div class="edit-modal-header">
+                <h2 id="edit-task-modal-title">Edit Task</h2>
+                <button id="edit-task-close-btn" class="modal-close-btn" type="button" aria-label="Close edit task dialog">&times;</button>
+            </div>
+            <form id="edit-task-form">
+                <div class="edit-modal-body">
+                    <label for="edit-task-title">Title</label>
+                    <input id="edit-task-title" class="control" type="text" required>
+
+                    <label for="edit-task-priority">Priority</label>
+                    <select id="edit-task-priority" class="control">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+
+                    <label for="edit-task-status">Status</label>
+                    <select id="edit-task-status" class="control">
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+
+                    <label for="edit-task-due-date">Due Date</label>
+                    <input id="edit-task-due-date" class="control" type="date">
+                    <span id="edit-task-error" class="error-message"></span>
+                </div>
+                <div class="edit-modal-footer">
+                    <button id="mark-complete-btn" class="btn-complete" type="button"><i class="ti ti-circle-check" aria-hidden="true"></i> Mark Complete</button>
+                    <div class="edit-modal-actions">
+                        <button id="edit-task-cancel-btn" class="btn-outline" type="button">Cancel</button>
+                        <button class="btn-new" type="submit">Save Changes</button>
+                    </div>
+                </div>
+            </form>
+        </section>
     </div>
 
     <!-- ============ CHAT WIDGET ============ -->
@@ -310,15 +371,15 @@
     <div id="chat-panel" class="chat-panel" hidden>
         <div class="chat-panel-header">
             <span><i class="ti ti-message-chatbot" aria-hidden="true"></i> TaskFlow Help</span>
-            <button id="chat-close-btn" class="chat-close" type="button" aria-label="Close chat">×</button>
+            <button id="chat-close-btn" class="chat-close" type="button" aria-label="Close chat">&times;</button>
         </div>
         <div id="chat-messages" class="chat-messages">
             <div class="chat-message bot">
-                <div class="chat-bubble">Hi! Ask me anything about using TaskFlow — Tasks, Projects, Quick Add, Search, Sort, or Stats.</div>
+                <div class="chat-bubble">Hi! Ask me anything about using TaskFlow - Tasks, Projects, Quick Add, Search, Sort, or Stats.</div>
             </div>
         </div>
         <form id="chat-form" class="chat-input-row">
-            <input type="text" id="chat-input" class="control" placeholder="Ask a question…" autocomplete="off">
+            <input type="text" id="chat-input" class="control" placeholder="Ask a question..." autocomplete="off">
             <button type="submit" class="btn-new" id="chat-send-btn">Send</button>
         </form>
     </div>
