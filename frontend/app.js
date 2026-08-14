@@ -9,7 +9,9 @@
 // =====================================================
 
 // Base URL for all API calls to the backend server
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? "http://localhost:8000"
+  : "https://taskflow-backend-2obb.onrender.com";
 
 // Local storage key for caching tasks data to improve performance
 const CACHE_KEY = "taskflow_tasks_v3";
