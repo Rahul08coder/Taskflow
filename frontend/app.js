@@ -85,7 +85,7 @@ const topbarRight = document.querySelector(".topbar-right");
 const topbarRightHome = document.createComment("topbar controls home");
 topbarRight.after(topbarRightHome);
 
-applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+applyTheme(localStorage.getItem(THEME_KEY) || "light");
 themeToggle.addEventListener("click", () => {
     applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
 });
@@ -280,6 +280,7 @@ async function fetchProjects() {
     try {
         const res = await fetch(`${API_BASE}/projects`, { headers: authHeaders() });
         if (handleAuthFailure(res)) return;
+        if (!res.ok) throw new Error(`Projects request failed: ${res.status}`);
         projects = await res.json();
     } catch (e) {
         console.error("Failed to fetch projects:", e);
@@ -474,12 +475,146 @@ function renderFilteredTaskList() {
         list = list.filter((t) => String(t.project_id) === pf);
     }
     taskCountBadge.textContent = list.length;
+    renderBoard(list);
     const totalPages = Math.max(1, Math.ceil(list.length / TASKS_PER_PAGE));
     currentTaskPage = Math.min(currentTaskPage, totalPages);
     const start = (currentTaskPage - 1) * TASKS_PER_PAGE;
     renderTaskList(taskListContainer, list.slice(start, start + TASKS_PER_PAGE));
     renderTaskPagination(list.length);
 }
+
+// =====================================================
+// Kanban board (drag a card to change its status)
+// =====================================================
+const BOARD_COLUMNS = [
+    { status: "pending", label: "To do" },
+    { status: "in_progress", label: "In progress" },
+    { status: "completed", label: "Done" },
+];
+
+function renderBoard(list) {
+    const board = document.getElementById("kanban-board");
+    board.textContent = "";
+    BOARD_COLUMNS.forEach((col) => {
+        const tasks = list.filter((t) => t.status === col.status);
+        const column = document.createElement("div");
+        column.className = `kb-column kb-${col.status}`;
+
+        const head = document.createElement("div");
+        head.className = "kb-head";
+        const name = document.createElement("span");
+        name.textContent = col.label;
+        const count = document.createElement("b");
+        count.textContent = tasks.length;
+        head.append(name, count);
+
+        const body = document.createElement("div");
+        body.className = "kb-body";
+        if (tasks.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "kb-empty";
+            empty.textContent = "Drop a task here";
+            body.appendChild(empty);
+        }
+        tasks.forEach((t) => body.appendChild(createBoardCard(t)));
+
+        body.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            body.classList.add("kb-over");
+        });
+        body.addEventListener("dragleave", () => body.classList.remove("kb-over"));
+        body.addEventListener("drop", (e) => {
+            e.preventDefault();
+            body.classList.remove("kb-over");
+            const id = Number(e.dataTransfer.getData("text/plain"));
+            moveTaskToStatus(id, col.status);
+        });
+
+        column.append(head, body);
+        board.appendChild(column);
+    });
+}
+
+function createBoardCard(task) {
+    const card = document.createElement("div");
+    card.className = `kb-card kb-prio-${task.priority}`;
+    card.draggable = true;
+    card.tabIndex = 0;
+
+    const title = document.createElement("div");
+    title.className = "kb-title";
+    title.textContent = task.title;
+
+    const meta = document.createElement("div");
+    meta.className = "kb-meta";
+    const prio = document.createElement("span");
+    prio.textContent = task.priority;
+    meta.appendChild(prio);
+    if (task.due_date) {
+        const due = document.createElement("span");
+        due.textContent = task.due_date.slice(0, 10);
+        meta.appendChild(due);
+    }
+    const proj = getProjectName(task.project_id);
+    if (proj) {
+        const p = document.createElement("span");
+        p.textContent = proj;
+        meta.appendChild(p);
+    }
+
+    card.append(title, meta);
+    card.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", String(task.id));
+        card.classList.add("kb-dragging");
+    });
+    card.addEventListener("dragend", () => card.classList.remove("kb-dragging"));
+    card.addEventListener("click", () => handleEdit(task.id));
+    card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") handleEdit(task.id);
+    });
+    return card;
+}
+
+async function moveTaskToStatus(taskId, newStatus) {
+    const task = allTasks.find((t) => t.id === taskId);
+    if (!task || task.status === newStatus) return;
+    try {
+        const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+            method: "PUT",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({
+                title: task.title,
+                priority: task.priority,
+                status: newStatus,
+                due_date: task.due_date || null,
+            }),
+        });
+        if (handleAuthFailure(res)) return;
+        if (!res.ok) {
+            showNotification("Could not move the task. Try again.", "error");
+            return;
+        }
+        await loadTasks(sortSelect.value);
+        await loadStats();
+        await refreshNotifications();
+    } catch (e) {
+        console.error("Move failed:", e);
+        showNotification("Network error. Task was not moved.", "error");
+    }
+}
+
+// List | Board toggle (choice is remembered)
+const VIEW_MODE_KEY = "taskflow_task_view";
+function setTaskViewMode(mode) {
+    const isBoard = mode === "board";
+    document.getElementById("task-list-card").classList.toggle("board-mode", isBoard);
+    document.getElementById("view-board-btn").classList.toggle("active", isBoard);
+    document.getElementById("view-list-btn").classList.toggle("active", !isBoard);
+    localStorage.setItem(VIEW_MODE_KEY, mode);
+}
+document.getElementById("view-list-btn").addEventListener("click", () => setTaskViewMode("list"));
+document.getElementById("view-board-btn").addEventListener("click", () => setTaskViewMode("board"));
+setTaskViewMode(localStorage.getItem(VIEW_MODE_KEY) || "board");
 
 // Event listener for project filter change
 projectFilterSelect.addEventListener("change", () => {
@@ -521,6 +656,10 @@ async function loadTasks(sort) {
     try {
         const res = await fetch(url, { headers: authHeaders() });
         if (handleAuthFailure(res)) return;
+        if (!res.ok) {
+            showNotification(`Could not load tasks (server error ${res.status}). Refresh in a minute.`, "error");
+            return;
+        }
         const data = await res.json();
         allTasks = data;
         currentTaskPage = 1;
@@ -1436,11 +1575,32 @@ async function init() {
     // Load cached tasks for immediate display
     loadCacheAndRender();
     // Fetch fresh data from backend
-    await fetchProjects();
-    await loadTasks();
-    await loadStats();
-    renderDashboard();
-    await refreshNotifications();
+    // Free hosting sleeps when idle: if loading is slow, tell the user why.
+    const wakeTimer = setTimeout(() => setWakeBanner(true), 4000);
+    try {
+        await fetchProjects();
+        await loadTasks();
+        await loadStats();
+        renderDashboard();
+        await refreshNotifications();
+    } finally {
+        clearTimeout(wakeTimer);
+        setWakeBanner(false);
+    }
+}
+
+function setWakeBanner(show) {
+    let banner = document.getElementById("wake-banner");
+    if (!banner) {
+        if (!show) return;
+        banner = document.createElement("div");
+        banner.id = "wake-banner";
+        banner.className = "wake-banner";
+        banner.setAttribute("role", "status");
+        banner.textContent = "Server is waking up (free hosting). This can take up to a minute.";
+        document.body.appendChild(banner);
+    }
+    banner.hidden = !show;
 }
 
 // Initialize application when DOM is fully loaded
