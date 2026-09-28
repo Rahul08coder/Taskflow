@@ -1558,13 +1558,108 @@ chatForm.addEventListener("submit", async (event) => {
 // =====================================================
 
 // Main initialization function - called when DOM is ready
+// =====================================================
+// User avatar: pick a cartoon avatar (saved per user in this browser)
+// =====================================================
+const AVATAR_OPTIONS = [
+    ["adventurer", "Felix"], ["adventurer", "Mia"], ["adventurer", "Leo"],
+    ["big-smile", "Zoe"], ["big-smile", "Max"], ["big-smile", "Nala"],
+    ["fun-emoji", "Oscar"], ["fun-emoji", "Ruby"], ["fun-emoji", "Toby"],
+    ["micah", "Luna"], ["micah", "Jack"], ["micah", "Cleo"],
+];
+const avatarPicker = document.getElementById("avatar-picker");
+
+function avatarUrl(style, seed) {
+    return `https://api.dicebear.com/9.x/${style}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf`;
+}
+
+function avatarStorageKey() {
+    return "taskflow_avatar_" + ((currentUser && (currentUser.id ?? currentUser.email)) || "guest");
+}
+
+function renderUserAvatar() {
+    const initials = ((currentUser && currentUser.name) || "TaskFlow User").slice(0, 2).toUpperCase();
+    const saved = localStorage.getItem(avatarStorageKey());
+    sidebarUserAvatar.textContent = "";
+    if (!saved) {
+        sidebarUserAvatar.textContent = initials;
+        return;
+    }
+    const [style, seed] = saved.split("|");
+    const img = document.createElement("img");
+    img.src = avatarUrl(style, seed);
+    img.alt = "";
+    img.onerror = () => { sidebarUserAvatar.textContent = initials; };
+    sidebarUserAvatar.appendChild(img);
+}
+
+function closeAvatarPicker() {
+    avatarPicker.hidden = true;
+}
+
+function buildAvatarPicker() {
+    avatarPicker.textContent = "";
+    const title = document.createElement("div");
+    title.className = "avatar-picker-title";
+    title.textContent = "Choose your avatar";
+
+    const grid = document.createElement("div");
+    grid.className = "avatar-grid";
+    const current = localStorage.getItem(avatarStorageKey());
+    AVATAR_OPTIONS.forEach(([style, seed]) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "avatar-option" + (current === `${style}|${seed}` ? " selected" : "");
+        btn.setAttribute("aria-label", `Use ${seed} avatar`);
+        const img = document.createElement("img");
+        img.src = avatarUrl(style, seed);
+        img.alt = "";
+        img.loading = "lazy";
+        btn.appendChild(img);
+        btn.addEventListener("click", () => {
+            localStorage.setItem(avatarStorageKey(), `${style}|${seed}`);
+            renderUserAvatar();
+            closeAvatarPicker();
+        });
+        grid.appendChild(btn);
+    });
+
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "avatar-reset";
+    reset.textContent = "Use my initials";
+    reset.addEventListener("click", () => {
+        localStorage.removeItem(avatarStorageKey());
+        renderUserAvatar();
+        closeAvatarPicker();
+    });
+
+    avatarPicker.append(title, grid, reset);
+}
+
+sidebarUserAvatar.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (avatarPicker.hidden) {
+        buildAvatarPicker();
+        avatarPicker.hidden = false;
+    } else {
+        closeAvatarPicker();
+    }
+});
+document.addEventListener("click", (event) => {
+    if (!avatarPicker.hidden && !avatarPicker.contains(event.target)) closeAvatarPicker();
+});
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeAvatarPicker();
+});
+
 async function init() {
     // Set user name in top bar and show admin nav if applicable
     if (currentUser) {
         const displayName = currentUser.name || "TaskFlow User";
         sidebarUserName.textContent = displayName;
         sidebarUserEmail.textContent = currentUser.email || "";
-        sidebarUserAvatar.textContent = displayName.slice(0, 2).toUpperCase();
+        renderUserAvatar();
         if (currentUser.is_admin) {
             navAdmin.hidden = false;
         }
