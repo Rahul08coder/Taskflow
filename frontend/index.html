@@ -161,10 +161,14 @@
                         <span id="title-error" class="error-message"></span>
                     </section>
 
-                    <section class="panel-card">
+                    <section class="panel-card" id="task-list-card">
                         <div class="panel-card-header">
                             <h2>Task list <span id="task-count-badge" class="count-badge">0</span></h2>
                             <div class="task-list-controls">
+                                <div class="view-toggle" role="group" aria-label="Task view">
+                                    <button type="button" id="view-list-btn" class="active"><i class="ti ti-list" aria-hidden="true"></i> List</button>
+                                    <button type="button" id="view-board-btn"><i class="ti ti-layout-kanban" aria-hidden="true"></i> Board</button>
+                                </div>
                                 <select id="project-filter-select" class="control control-sm">
                                     <option value="all">All projects</option>
                                 </select>
@@ -173,6 +177,7 @@
                         </div>
                         <div id="task-list-container" class="task-list" aria-live="polite"></div>
                         <nav id="task-pagination" class="pagination" aria-label="Task list pages" hidden></nav>
+                        <div id="kanban-board" class="kanban" aria-label="Task board"></div>
                     </section>
                 </section>
 

@@ -22,6 +22,7 @@
 
             <div id="login-success" class="auth-success" hidden>Account created — log in below.</div>
             <div id="login-error" class="auth-error" hidden></div>
+            <div id="login-hint" class="auth-success" hidden>Server is waking up (free hosting). This can take up to a minute.</div>
 
             <form id="login-form">
                 <div class="auth-field">
@@ -67,6 +68,12 @@
             const email = document.getElementById("login-email").value.trim();
             const password = document.getElementById("login-password").value;
 
+            const submitBtn = loginForm.querySelector("button[type=submit]");
+            const loginHint = document.getElementById("login-hint");
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Logging in…";
+            const hintTimer = setTimeout(() => { loginHint.hidden = false; }, 4000);
+
             try {
                 const res = await fetch(`${API_BASE}/auth/login`, {
                     method: "POST",
@@ -95,6 +102,11 @@
                 console.error("Login failed:", e);
                 loginError.textContent = "Network error — check the backend is running.";
                 loginError.hidden = false;
+            } finally {
+                clearTimeout(hintTimer);
+                loginHint.hidden = true;
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Log in";
             }
         });
     </script>

@@ -60,6 +60,10 @@
             const email = document.getElementById("reg-email").value.trim();
             const password = document.getElementById("reg-password").value;
 
+            const submitBtn = registerForm.querySelector("button[type=submit]");
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Creating account…";
+
             try {
                 const res = await fetch(`${API_BASE}/auth/register`, {
                     method: "POST",
@@ -86,6 +90,9 @@
                 console.error("Register failed:", e);
                 registerError.textContent = "Network error — check the backend is running.";
                 registerError.hidden = false;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = "Create account";
             }
         });
     </script>
