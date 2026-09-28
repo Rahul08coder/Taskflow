@@ -2195,3 +2195,14 @@ button:disabled, .pagination-btn:disabled { cursor: not-allowed; }
 :root[data-theme="dark"] .auth-card { border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, .45); }
 :root[data-theme="dark"] .landing-preview { box-shadow: 0 8px 32px rgba(0, 0, 0, .45); }
 :root[data-theme="dark"] .landing-copy h1 span { color: var(--teal); }
+
+/* =========================================================
+   Narrow screens: keep the sticky top bar above page content
+   (cards use position: relative and were painting over it)
+========================================================= */
+@media (max-width: 960px) {
+    .nav-sidebar { position: sticky; top: 0; z-index: 100; background: var(--surface); }
+    .app-shell { padding-top: 0; }
+    .main-area { padding-top: 16px; }
+    .kpi-tile { z-index: 0; }
+}
