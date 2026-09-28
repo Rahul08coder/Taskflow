@@ -15,7 +15,7 @@ const API_BASE = window.location.hostname === "localhost" || window.location.hos
 
 // Local storage key for caching tasks data to improve performance
 const CACHE_KEY = "taskflow_tasks_v3";
-const THEME_KEY = "taskflow_theme";
+const THEME_KEY = "taskflow_theme_v2";
 
 function applyTheme(theme) {
     const isLight = theme === "light";
