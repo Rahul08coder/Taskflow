@@ -2082,3 +2082,20 @@ textarea:focus-visible {
 :root[data-theme="light"] .kb-head b { background: #fff; color: var(--ink); }
 :root[data-theme="light"] .kb-card { background: #fff; border-color: var(--border); box-shadow: 0 1px 3px rgba(18, 19, 40, .10); }
 :root[data-theme="light"] .view-toggle { background: #E4E7F0; border-color: var(--border-strong); }
+
+
+/* =========================================================
+   Visible pointer: indigo hand with white outline, so it stays
+   readable over light rows, cards and the Kanban board
+========================================================= */
+:root { --hand-cursor: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22 viewBox=%220 0 32 32%22%3E%3Cg fill=%22%23fff%22 stroke=%22%23fff%22 stroke-width=%223%22 stroke-linejoin=%22round%22%3E%3Crect x=%2210%22 y=%222%22 width=%225%22 height=%2216%22 rx=%222.5%22/%3E%3Crect x=%2215%22 y=%2211%22 width=%224.6%22 height=%2210%22 rx=%222.3%22/%3E%3Crect x=%2219.2%22 y=%2212%22 width=%224.6%22 height=%2210%22 rx=%222.3%22/%3E%3Crect x=%2223.4%22 y=%2214%22 width=%224.2%22 height=%229%22 rx=%222.1%22/%3E%3Crect x=%227%22 y=%2216%22 width=%2220.6%22 height=%2212%22 rx=%225%22/%3E%3Crect x=%222.5%22 y=%2215.5%22 width=%229%22 height=%225%22 rx=%222.5%22 transform=%22rotate%2828 7 18%29%22/%3E%3C/g%3E%3Cg fill=%22%235E6AD2%22%3E%3Crect x=%2210%22 y=%222%22 width=%225%22 height=%2216%22 rx=%222.5%22/%3E%3Crect x=%2215%22 y=%2211%22 width=%224.6%22 height=%2210%22 rx=%222.3%22/%3E%3Crect x=%2219.2%22 y=%2212%22 width=%224.6%22 height=%2210%22 rx=%222.3%22/%3E%3Crect x=%2223.4%22 y=%2214%22 width=%224.2%22 height=%229%22 rx=%222.1%22/%3E%3Crect x=%227%22 y=%2216%22 width=%2220.6%22 height=%2212%22 rx=%225%22/%3E%3Crect x=%222.5%22 y=%2215.5%22 width=%229%22 height=%225%22 rx=%222.5%22 transform=%22rotate%2828 7 18%29%22/%3E%3C/g%3E%3C/svg%3E") 12 3, pointer; }
+a, button, select, summary, label[for], [role="button"],
+.nav-item, .btn-new, .btn-outline, .btn-blue, .icon-btn, .pagination-btn,
+.notif-bell, .theme-toggle, .task-item, .project-card, .kb-card,
+.view-toggle button, .modal-close-btn, .sidebar-logout-btn { cursor: var(--hand-cursor); }
+.kb-card:active { cursor: var(--hand-cursor); }
+button:disabled, .pagination-btn:disabled { cursor: not-allowed; }
+
+/* Row under the pointer gets a clear accent, not just a faint tint */
+:root[data-theme="light"] .task-item:hover,
+:root[data-theme="light"] .project-card:hover { background: #E6E9FB; border-color: var(--teal); }
