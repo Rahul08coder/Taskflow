@@ -2016,3 +2016,69 @@ textarea:focus-visible {
 :root[data-theme="light"] .auth-card { box-shadow: 0 4px 24px rgba(20, 20, 40, .06); border-radius: 12px; }
 :root[data-theme="light"] .landing-preview { box-shadow: 0 8px 32px rgba(20, 20, 40, .08); }
 :root[data-theme="light"] .landing-copy h1 span { color: var(--teal); }
+
+/* =========================================================
+   CONTRAST PASS — clearer layers, stronger type weights
+   (page < sidebar < cards, so surfaces stop blending into white)
+========================================================= */
+:root[data-theme="light"] {
+    --page-bg: #ECEEF4;
+    --surface: #FFFFFF;
+    --surface-2: #F0F2F7;
+    --border: #D9DCE6;
+    --border-strong: #BFC4D2;
+    --ink: #12131A;
+    --ink-muted: #565C6E;
+}
+
+/* Depth: cards lift off the tinted page */
+:root[data-theme="light"] .panel-card,
+:root[data-theme="light"] .kpi-tile,
+:root[data-theme="light"] .auth-card { box-shadow: 0 1px 3px rgba(18, 19, 40, .08), 0 1px 2px rgba(18, 19, 40, .05); }
+:root[data-theme="light"] .task-item,
+:root[data-theme="light"] .project-card { background: var(--surface-2); border-color: var(--border); }
+:root[data-theme="light"] .task-item:hover,
+:root[data-theme="light"] .project-card:hover { background: #E8EBF3; border-color: var(--border-strong); }
+:root[data-theme="light"] .control { border-color: var(--border-strong); }
+
+/* Sidebar a step darker than the page, active item pops as a white tab */
+@media (min-width: 961px) {
+    :root[data-theme="light"] .nav-sidebar { background: #E3E6EE; border-right-color: var(--border-strong); }
+    :root[data-theme="light"] .topbar { border-bottom-color: var(--border-strong); }
+}
+:root[data-theme="light"] .nav-item { color: #3B4152; font-weight: 600; }
+:root[data-theme="light"] .nav-item:hover { background: rgba(255, 255, 255, .6); }
+:root[data-theme="light"] .nav-item.active { background: #fff; color: var(--teal); font-weight: 700; box-shadow: 0 1px 3px rgba(18, 19, 40, .12); }
+:root[data-theme="light"] .nav-item.active .nav-icon { color: var(--teal); }
+:root[data-theme="light"] .sidebar-user-card { border-top-color: var(--border-strong); }
+
+/* Stat tiles: a coloured top edge brings the shades back */
+:root[data-theme="light"] .kpi-tile { border-top: 3px solid var(--border-strong); }
+:root[data-theme="light"] .kpi-tile.accent-teal { border-top-color: var(--teal); }
+:root[data-theme="light"] .kpi-tile.accent-blue { border-top-color: var(--blue); }
+:root[data-theme="light"] .kpi-tile.accent-amber { border-top-color: var(--amber); }
+:root[data-theme="light"] .kpi-tile.accent-green { border-top-color: var(--green); }
+:root[data-theme="light"] .kpi-tile.accent-red { border-top-color: var(--red); }
+:root[data-theme="light"] .kpi-tile .kpi-value { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+:root[data-theme="light"] .kpi-label { font-weight: 600; color: var(--ink-muted); }
+
+/* Type weights */
+:root[data-theme="light"] .topbar-heading h1 { font-weight: 700; font-size: 22px; }
+:root[data-theme="light"] .panel-card h2 { font-weight: 700; font-size: 16px; }
+:root[data-theme="light"] .task-title,
+:root[data-theme="light"] .project-name,
+:root[data-theme="light"] .kb-title { font-weight: 600; }
+:root[data-theme="light"] .preview-label,
+:root[data-theme="light"] .edit-modal-body label,
+:root[data-theme="light"] .auth-field label { font-weight: 600; color: var(--ink); }
+:root[data-theme="light"] .btn-new,
+:root[data-theme="light"] .btn-outline { font-weight: 700; }
+:root[data-theme="light"] .pill { font-weight: 700; }
+:root[data-theme="light"] .status-pill { font-weight: 600; }
+
+/* Kanban: darker lanes so white cards stand out */
+:root[data-theme="light"] .kb-column { background: #E4E7F0; border-color: var(--border-strong); }
+:root[data-theme="light"] .kb-head { font-weight: 700; }
+:root[data-theme="light"] .kb-head b { background: #fff; color: var(--ink); }
+:root[data-theme="light"] .kb-card { background: #fff; border-color: var(--border); box-shadow: 0 1px 3px rgba(18, 19, 40, .10); }
+:root[data-theme="light"] .view-toggle { background: #E4E7F0; border-color: var(--border-strong); }
