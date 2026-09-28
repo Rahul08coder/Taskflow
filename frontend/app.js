@@ -15,7 +15,7 @@ const API_BASE = window.location.hostname === "localhost" || window.location.hos
 
 // Local storage key for caching tasks data to improve performance
 const CACHE_KEY = "taskflow_tasks_v3";
-const THEME_KEY = "taskflow_theme_v2";
+const THEME_KEY = "taskflow_theme_v3";
 
 function applyTheme(theme) {
     const isLight = theme === "light";
@@ -85,7 +85,7 @@ const topbarRight = document.querySelector(".topbar-right");
 const topbarRightHome = document.createComment("topbar controls home");
 topbarRight.after(topbarRightHome);
 
-applyTheme(localStorage.getItem(THEME_KEY) || "light");
+applyTheme(localStorage.getItem(THEME_KEY) || "dark");
 themeToggle.addEventListener("click", () => {
     applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
 });
